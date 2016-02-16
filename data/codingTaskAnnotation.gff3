@@ -1,0 +1,26 @@
+##gff-version 3.2.1
+##sequence-region	sequence1	1	10000
+sequence1	.	gene	1000	7000	.	+	.	ID=gene1;Name=GENE1
+sequence1	.	TF_binding_site	10001012	.	+	.	Parent=gene1
+sequence1	.	mRNA	1050	7000	.	+	.	ID=mRNA1;Parent=gene1
+sequence1	.	mRNA	1050	7000	.	+	.	ID=mRNA2;Parent=gene1
+sequence1	.	mRNA	1300	7000	.	+	.	ID=mRNA3;Parent=gene1
+sequence1	.	exon	1300	1500	.	+	.	Parent=mRNA3
+sequence1	.	exon	1050	1500	.	+	.	Parent=mRNA1,mRNA2
+sequence1	.	exon	3000	3902	.	+	.	Parent=mRNA1,mRNA3
+sequence1	.	exon	5000	5500	.	+	.	Parent=mRNA1,mRNA2,mRNA3
+sequence1	.	CDS	1201	1500	.	+	0	ID=cds1;Parent=mRNA1
+sequence1	.	CDS	3000	3902	.	+	0	ID=cds1;Parent=mRNA1
+sequence1	.	CDS	5000	5500	.	+	0	ID=cds1;Parent=mRNA1
+sequence1	.	CDS	1201	1500	.	+	0	ID=cds2;Parent=mRNA2
+sequence1	.	CDS	5000	5500	.	+	0	ID=cds2;Parent=mRNA2
+sequence1	.	CDS	3301	3902	.	+	0	ID=cds3;Parent=mRNA3
+sequence1	.	CDS		5000	5500	.	+	1	ID=cds3;Parent=mRNA3
+sequence1	.	CDS	3391	3902	.	+	0	ID=cds4;Parent=mRNA3
+sequence1	.	CDS		5000	5500	.	+	1	ID=cds4;Parent=mRNA3
+sequence1	.	gene	8500	9500	.	-	.	ID=gene2;Name=GENE2
+sequence1	.	mRNA	8500	9000	.	-	.	ID=mRNA21;Parent=gene2
+sequence1	.	exon	8500	8800	.	-	.	Parent=mRNA21
+sequence1	.	exon	9000	9500	.	-	.	Parent=mRNA21
+sequence1	.	CDS	8600	8800	.	-	0	ID=cds21;Parent=mRNA21
+sequence1	.	CDS	9000	9200	.	-	0	ID=cds21;Parent=mRNA21
