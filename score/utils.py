@@ -2,19 +2,23 @@
 utils.py
 author: Kyle McChesney
 
-Utility functions and calles for scoring CRISPIR targets
-
+Utility functions and for scoring CRISPIR targets
 """
 import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
-class CRISPIRArgumentParser(ArgumentParser):
+from Bio import SeqIO
+
+class CRISPRArgumentParser(ArgumentParser):
 
     def __init__(self, *args, **kwargs):
 
-        super(CRISPIRArgumentParser, self).__init__(*args, **kwargs)
+        super(CRISPRArgumentParser, self).__init__(*args, **kwargs)
         self.formatter_class = ArgumentDefaultsHelpFormatter
         self._optionals.title = 'Options'
+
+        self.add_argument("--verbose", "-v", help="Set log to INFO",
+                          action="store_true")
 
         # main args
         self.add_argument("--fasta", help="fasta file to search in",
@@ -46,7 +50,7 @@ class CRISPIRArgumentParser(ArgumentParser):
                             help="Target GC content percentage",
                             metavar="gc-goal")
         self.add_argument("--gc-multiplyer", default=1, type=int,
-                            help="GC target multiplier: score * |val-target|",
+                            help="GC target multiplier: score * 1 / |val-target|",
                             metavar="gc-score")
 
         # seed region scoring
@@ -67,3 +71,15 @@ class CRISPIRArgumentParser(ArgumentParser):
 def file_exists(file):
     fullpath = os.path.abspath(file)
     return os.path.exists(fullpath)
+
+def read_fasta_file(fasta):
+
+    # read it in
+    # assume there is only one
+    try:
+        fasta_record = SeqIO.read(open(fasta), "fasta")
+    except ValueError:
+        log.error("Fasta file %s has more than one sequence -- Exiting", fasta)
+        raise SystemExit
+
+    return fasta_record
