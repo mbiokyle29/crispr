@@ -63,7 +63,7 @@ def main():
     # the score = (1 / count) * multiplyer, so a kmer which appears once
     # has a base score of one, whereas a more common one (5) would have .2
     kmer_size = args.seed_end - args.seed_start + 1
-    kmer_specta = build_kmer_count(fasta.seq, k=kmer_size)
+    kmer_specta = build_kmer_count(fasta, k=kmer_size)
     targets = []
 
     # yields a Crispir target seq instance

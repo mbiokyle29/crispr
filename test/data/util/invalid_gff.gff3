@@ -1,0 +1,8 @@
+##gff-version 3.2.1
+##sequence-region	sequence1	1	10000
+sequence1	.	gene	1000	7000	+	.	ID=gene1;Name=GENE1
+sequence1	.	exon	5000	5500	.	+	.	Parent=mRNA1,mRNA2,mRNA3
+sequence1	.	CDS 1201	1500	.	+	0	ID=cds1;Parent=mRNA1
+sequence1	.	CDS 3000	3902	.	+	0	ID=cds1;Parent=mRNA1
+sequence1	.	CDS 5000	5500	.	+	0	ID=cds1;Parent=mRNA1
+sequence1	.	CDS 1201	1500	.	+	0	ID=cds2;Parent=mRNA2
