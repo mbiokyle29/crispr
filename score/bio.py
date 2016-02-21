@@ -5,7 +5,6 @@ author: Kyle McChesney
 Bioinformatics functions for crispr scoring
 """
 import logging
-import itertools
 import re
 from collections import defaultdict
 from string import upper
@@ -13,7 +12,7 @@ from string import upper
 from Bio.SeqRecord import SeqRecord
 
 log = logging.getLogger("__main__")
-DNA_ALPHABET = set(["A","T","C","G"])
+DNA_ALPHABET = set(["A", "T", "C", "G"])
 DNA_TO_BIN = {
     "A": "00",
     "T": "01",
@@ -33,17 +32,40 @@ class CrisprTarget(SeqRecord):
 
         # make GC content as a percent
         content = sum([g_count, c_count]) / float(len(sequence))
-        content = content * 100 
-        self.gc_content = round(content,0)
+        content = content * 100
+        self.gc_content = round(content, 0)
+
+        # set the start stop in parent seq
+        self.start = int(kwargs['id'])
+        self.stop = self.start + len(sequence)
 
         # set up score
         self.score = -1
+        self.genes = []
 
     def __str__(self):
-        return "<CrisprTarget ({}): '{}' >".format(self.id, self.seq)
+
+        if self.score != -1:
+            return "<{}: score: {} '{}' >".format(self.name, self.score,
+                                                  self.seq)
+        else:
+            return "<{}: '{}' >".format(self.name, self.seq)
 
     def to_bed(self):
-        return -1
+        source_seq = self.name.split("-")[0]
+        start = self.id
+        stop = len(self.seq) + int(start)
+
+        pam = self.seq[-3:]
+        target = self.seq[:-3]
+        name = "target:\'{}\';pam:\'{}\'".format(target, pam)
+
+        if len(self.genes) > 0:
+            name += ";genes:[{}]".format(",".join(self.genes))
+
+        return "\t".join([source_seq, str(start),
+                          str(stop), name, str(self.score)])
+
 
 def build_kmer_count(sequence, k=8):
     """
@@ -54,9 +76,9 @@ def build_kmer_count(sequence, k=8):
             with counts as values
     """
     spectra = defaultdict(int)
-    
+
     if k < 1:
-        raise ValueError("kmer size must be at least 1" )
+        raise ValueError("kmer size must be at least 1")
 
     start_idx = 0
     stop_idx = k
@@ -72,36 +94,10 @@ def build_kmer_count(sequence, k=8):
         stop_idx += 1
 
     for kmer in spectra:
-        spectra[kmer] = float(len(spectra)) / spectra[kmer] 
+        spectra[kmer] = (1 / float(spectra[kmer]))
 
     return spectra
 
-def build_kmer_hamming(sequence, k=8):
-
-    spectra = set()
-    if k < 1:
-        raise ValueError("kmer size must be at least 1" )
-
-    start_idx = 0
-    stop_idx = k
-
-    # build the set of kmers
-    while stop_idx <= (len(sequence)):
-        kmer = sequence[start_idx:stop_idx]
-        spectra.add(str(kmer))
-
-        # move pointer
-        start_idx += 1
-        stop_idx += 1
-
-    hamming_spectra = {}
-    size = len(spectra)
-    for kmer in spectra:
-        others = spectra - set(kmer)
-        average_hamming_dist = sum([fast_hamming(kmer, x) for x in others]) / size
-        hamming_spectra[kmer] = average_hamming_dist
-
-    return hamming_spectra
 
 def generate_targets(sequence, target_length=20, pam="GG"):
 
@@ -116,30 +112,34 @@ def generate_targets(sequence, target_length=20, pam="GG"):
             start = pam_idx - target_length - 1
             stop = pam_idx + len(pam)  # add the length of the pam
             name = "{}-CRISPR-TARGET({})".format(sequence.name, start)
-            yield CrisprTarget(seq_string[start:stop], id=str(start), name=name)
+            yield CrisprTarget(seq_string[start:stop],
+                               id=str(start), name=name)
 
         pam_idx = seq_string.find(pam, pam_idx+1)
 
+
 def filter_target(target, gc_low=20, gc_high=80, homopolymer_length=5):
-    
+
     # check GC
-    if not target.gc_content in range(gc_low, gc_high):
-        log.info("Target %s failed GC cutoff (%i%s)\n", target, target.gc_content,"%")
+    if target.gc_content not in range(gc_low, gc_high):
+        log.info("Target %s failed GC cutoff (%i%s)",
+                 target, target.gc_content, "%")
         return False
 
     # check ATG
     if "ATG" in target.seq:
-        log.info("Target %s failed ATG motif check\n", target)
+        log.info("Target %s failed ATG motif check", target)
         return False
 
     # check homopolymer
     regex = "".join(["(.)\1{", str(homopolymer_length), ",}"])
-    if re.search(regex, target.seq) != None:
-        log.info("Target %s failed homopolymer check\n", target)
+    if re.search(regex, target.seq) is not None:
+        log.info("Target %s failed homopolymer check", target)
         return False
 
     log.info("Target %s passed filter", target)
     return True
+
 
 def score_target(target, kmer_spectra, **scoring_params):
 
@@ -169,35 +169,29 @@ def score_target(target, kmer_spectra, **scoring_params):
     log.info("Seed: %s has a unique score of %f",
              seed_sequence, kmer_spectra[seed_sequence])
     score += kmer_spectra[seed_sequence] * unique_multiplyer
-    
-    return score
 
-# http://jhafranco.com/2012/02/12/hamming-distance/
-def fast_hamming(left, right):
+    return round(score, 2)
 
-    if len(left) != len(right):
-        log.error("length of %s not equal to %s cannot compute hamming distance",
-            left, right)
-        raise ValueError("Strings must be equal length for hamming distance")
 
-    left = int(dna_to_bit_string(left), 2)
-    right = int(dna_to_bit_string(right), 2)
-    xor = right^left
-    count = 0
+def annotate_gene_overlaps(targets, gff):
 
-    while xor:
-        count += 1
-        xor &= xor-1
+    for target in targets:
+        for gene in gff:
 
-    return count
+            # note, GFF is 1 based
+            gene_start, gene_stop = gff[gene]
 
-def dna_to_bit_string(sequence):
+            # BED is 0 so +1 to target bounds
+            target_start = target.start + 1
+            target_stop = target.stop + 1
 
-    if not set(upper(sequence)) <= DNA_ALPHABET:
-        log.error("Can only convert DNA (ATCG) to a bit string")
-        raise ValueError("Sequence with elements not in ATCG")
+            if target_start in range(gene_start, gene_stop):
+                log.info("Target {} overlaps with gene: {}".format(target,
+                                                                   gene))
+                target.genes.append(gene)
+            elif target_stop in range(gene_start, gene_stop):
+                log.info("Target {} overlaps with gene: {}".format(target,
+                                                                   gene))
+                target.genes.append(gene)
 
-    for char in DNA_TO_BIN:
-        sequence = sequence.replace(char, DNA_TO_BIN[char])
-
-    return sequence
+    return targets
