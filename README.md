@@ -7,6 +7,9 @@ the problem specification. However, there are many optional parameters that can 
 #### Simple example:
 This will run the script with the supplied data, and output to `crispr_targets.bed`
 ```bash
+virtualenv venv
+source venv/bin/activate
+pip install -r requirements.txt
 python score_crispr_targets.py --fasta data/codingTaskSequence.fa  --gff data/codingTaskAnnotation.gff3
 ```
 
@@ -36,6 +39,6 @@ python score_crispr_targets.py --fasta data/codingTaskSequence.fa  \
 
 
 The `Makefile` provides three commands:
-1. `lint` - Run flake8
-2. `test` - Run `lint` as well as the unittest
-3. `run`  - Run the script on the given data files, with parameters to the specification
+ 1. `lint` - Run flake8
+ 2. `test` - Run `lint` as well as the unittest
+ 3. `run`  - Run the script on the given data files, with parameters to the specification
