@@ -21,7 +21,18 @@ DNA_TO_BIN = {
 
 
 class CrisprTarget(SeqRecord):
+    """
+    This class extends the SeqRecord biopython class
+    Most of it is unchanged, expcet for a new to string method
+    and a to_bed function which converts the record into a bed line
 
+    It has the following new attrs
+    gc_content: (float) The GC value of the seq
+    start: (int) The 0-based index where this target starts in its parent
+    stop: (int) Above, the end point
+    score: (float) The targets score (starts at -1)
+    genes: (array) An array to store string annotations of overlapping genes
+    """
     def __init__(self, sequence, **kwargs):
         SeqRecord.__init__(self, sequence, **kwargs)
 
@@ -68,10 +79,16 @@ class CrisprTarget(SeqRecord):
 
 def build_kmer_count(sequence, k=8):
     """
-    sequence: a nuclecic acid sequence as string
-    k: an integer value, the length of k-mers
+    This function generates a count mer-spectra of the seq.
+    For each kmer, the # of instances of it are counted.
+    And then set to 1/count. So a unique k-mer will be at most 1.
+    (1/1), where as a more common k-mer could be .1 (1/10).
+    This is used to score uniqueness of kmers
 
-    returns: a default dictionary keyed by k-mers
+    sequence: (string) A nuclecic acid sequence
+    k: (int) the length of k-mers
+
+    returns: A default dictionary keyed by k-mers
             with counts as values
     """
     spectra = defaultdict(int)
@@ -99,7 +116,13 @@ def build_kmer_count(sequence, k=8):
 
 
 def generate_targets(sequence, target_length=20, pam="GG"):
+    """
+    sequence: (string) A nuclecic acid sequence
+    target_length: (int) The length of the target seqs to find (- PAM)
+    pam: (string) The PAM sequence to look for
 
+    yields: (CrisprTarget) instance dervied from parent seq + found target
+    """
     seq_string = str(sequence.seq)
     pam_idx = seq_string.find(pam)
 
@@ -118,7 +141,19 @@ def generate_targets(sequence, target_length=20, pam="GG"):
 
 
 def filter_target(target, gc_low=20, gc_high=80, homopolymer_length=5):
+    """
+    This function filters CrisprTarget's given filter parameters.
+    A target fails if any of the following apply:
+        - GC content not in range
+        - 'ATG' present in sequence
+        - exists a homopolymer in the target >= the cutoff length
+    target: (CrisprTarget) instance
+    gc_low: (int) The lower acceptable bound for GC
+    gc_high: (int) The higher acceptable bound for GC
+    homopolymer_length: (int) The inclusive cutoff for homopolymers
 
+    returns: (boolean) If the target passed or not
+    """
     # check GC
     if target.gc_content not in range(gc_low, gc_high):
         log.info("Target %s failed GC cutoff (%i%s)",
@@ -142,7 +177,18 @@ def filter_target(target, gc_low=20, gc_high=80, homopolymer_length=5):
 
 
 def score_target(target, kmer_spectra, **scoring_params):
+    """
+    This function calculates a score for the input target,
+    based on parameters given in the kwargs (or defaults)
 
+    target: (CrisprTarget) instance to score
+    kmer_spectra: (dict[sequence] : int) A count kmer spectra from
+        build_kmer_count. Note, it must be the spectra derived from
+        the targets parent sequence.
+    scoring_params: (dict) Parameters for scoring, see --help
+
+    returns: (float) The calculated score
+    """
     score = 0
     log.info("Scoring: %s", target)
 
@@ -174,7 +220,17 @@ def score_target(target, kmer_spectra, **scoring_params):
 
 
 def annotate_gene_overlaps(targets, gff):
+    """
+    This function finds any genes from a parsed GFF that 
+    CrisprTargets may overlap with. It adds any to the .data array
+    of the target.
 
+    targets: (array[CrisprTarget]) Target instances to annotate
+    gff: (dict(string): tuple(start, stop)) A dict with gff annotations
+        from utils.read_gff_file
+
+    returns: (array[CrisprTarget]) The input array, modified w/ annotation
+    """
     for target in targets:
         for gene in gff:
 

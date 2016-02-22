@@ -55,7 +55,7 @@ class CRISPRArgumentParser(ArgumentParser):
         self.add_argument("--gc-goal", default=0.45, type=float,
                           help="Target GC content percentage",
                           metavar="gc-goal")
-        self.add_argument("--gc-multiplyer", default=1.5, type=int,
+        self.add_argument("--gc-multiplyer", default=1.5, type=float,
                           help="GC target multiplier",
                           metavar="gc-score")
 
@@ -67,7 +67,7 @@ class CRISPRArgumentParser(ArgumentParser):
         self.add_argument("--seed-end", default=20, type=int,
                           help="1 based index for end of seed",
                           metavar="seed-end")
-        self.add_argument("--uniqueness-multiplyer", default=1.5, type=int,
+        self.add_argument("--uniqueness-multiplyer", default=1.5, type=float,
                           help="Unique multiplier: mult * score",
                           metavar="unique-score")
 
